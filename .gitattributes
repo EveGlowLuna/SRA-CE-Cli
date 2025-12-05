@@ -1,0 +1,9 @@
+# 永久排除规则 - 这些文件永远使用我们的版本
+/.github/** merge=ours
+/SRAFrontend/** merge=ours  
+/setup/** merge=ours
+/README.md merge=ours
+/package.py merge=ours
+
+# 启用合并策略
+git config merge.ours.driver true
