@@ -4,6 +4,8 @@
 /setup/** merge=ours
 /README.md merge=ours
 /package.py merge=ours
+/sync_upstream.py merge=ours
+/README.md merge=ours
 
 # 启用合并策略
 git config merge.ours.driver true
