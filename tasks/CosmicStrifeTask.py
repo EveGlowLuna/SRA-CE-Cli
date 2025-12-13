@@ -15,7 +15,19 @@ class CosmicStrifeTask(BaseTask):
             if not du_task.run():
                 logger.error("旷宇纷争-模拟宇宙任务失败")
                 return False
-        if self.config.get("CurrencyWarsEnable", False):
+        # 互斥：货币战争常规 vs 刷开局
+        cw_enable = self.config.get("CurrencyWarsEnable", False)
+        cw_mode = self.config.get("CurrencyWarsMode", 0)
+
+        if cw_mode==2:
+            logger.info("执行任务：旷宇纷争-货币战争刷开局")
+            from tasks.currency_wars import BrushOpening
+            bo_task = BrushOpening()
+            if not bo_task.opening():
+                logger.error("旷宇纷争-货币战争刷开局任务失败")
+                return False
+
+        if cw_mode==1 or cw_mode==0:
             logger.info("执行任务：旷宇纷争-货币战争")
             from tasks.currency_wars import CurrencyWars
             cw_task = CurrencyWars(self.config.get("CurrencyWarsRunTimes", 0))
@@ -24,6 +36,11 @@ class CosmicStrifeTask(BaseTask):
                 logger.error("货币战争开拓者名称为空，请在前端配置中填写。")
                 return False
             cw_task.set_username(username)
+            cw_task.load_strategy("template")
+            # 前端难度选择：0=最低难度，1=最高难度
+            difficulty = self.config.get("CurrencyWarsDifficulty", 0)
+            cw_task.set_difficulty(difficulty)
+
             if not cw_task.run():
                 logger.error("旷宇纷争-货币战争任务失败")
                 return False

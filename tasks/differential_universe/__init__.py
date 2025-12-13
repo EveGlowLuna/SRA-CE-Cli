@@ -20,8 +20,7 @@ class DifferentialUniverse(Executable):
             if not self._select():
                 return False
             if not self._navigate_and_fight():
-                return False+65
-
+                return False
             if not self._select():
                 return False
             if not self._complete_mission():
@@ -36,14 +35,12 @@ class DifferentialUniverse(Executable):
         logger.info(f"第{exe_time + 1}次进入差分宇宙，少女祈祷中…")
         box = self.wait_img("resources/img/differential_universe_start.png")
         # 点击开始按钮
-        if not self.click_box(box):
+        if box is None:
             logger.error("发生错误，错误编号18")
             return False
-
-        # 等待并点击周期演算
-        if not self.wait_img("resources/img/periodic_calculus.png"):
-            logger.error("发生错误，错误编号19")
-            return False
+        self.do_while(lambda : self.click_box(box),
+                      lambda : self.locate("resources/img/periodic_calculus.png") is None,
+                      interval=0.5, max_iterations=10)
         self.click_img("resources/img/periodic_calculus.png")
 
         # 处理队伍选择
@@ -154,6 +151,7 @@ class DifferentialUniverse(Executable):
         elif page == 1:
             return True
         elif page == 2:
+            # 积分奖励页面
             self.sleep(4)
             self.press_key('esc')
             return True
