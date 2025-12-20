@@ -10,19 +10,10 @@
 ## 小白可直接移步至主仓库
 [EveGlowLuna/StarRailAssistant-CommunityEdition](https://github.com/EveGlowLuna/StarRailAssistant-CommunityEdition)
 
-或使用原版SRA:
-
-[Shasnow/StarRailAssistant](https://github.com/Shasnow/StarRailAssistant)
-
 ## 同步上游更新
 在 `SRA-CE-cli` 文件夹中：
 ```pwsh
 git remote add upstream https://github.com/Shasnow/StarRailAssistant.git
-
-python sync_upstream.py
-# 或者
-./sync.ps1
-# 注意 sync.ps1 停止维护
 ```
 
 ## 运行、编译
