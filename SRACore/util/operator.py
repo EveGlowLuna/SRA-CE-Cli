@@ -1,4 +1,6 @@
 import dataclasses
+import platform
+import subprocess
 import time
 from pathlib import Path
 from typing import Any, overload, Callable
@@ -6,13 +8,17 @@ from typing import Any, overload, Callable
 import cv2
 import numpy as np
 import pyautogui
-import pygetwindow
+if platform.system() == "Windows":
+    import pygetwindow
 # noinspection PyPackageRequirements
 # (pyperclip is in pyautogui requirements)
 import pyperclip
 import pyscreeze
 from PIL.Image import Image
 from pyscreeze import Box
+
+
+from ewmh import EWMH
 
 from rapidocr_onnxruntime import RapidOCR
 from SRACore.util.config import load_settings
@@ -79,12 +85,28 @@ class Operator:
 
     @property
     def is_window_active(self) -> bool:
-        try:
-            win = pygetwindow.getWindowsWithTitle(self.window_title)[0]
-            return win.isActive
-        except IndexError:
+        if platform.system() == "Windows":
+            try:
+                win = pygetwindow.getWindowsWithTitle(self.window_title)[0]
+                return win.isActive
+            except IndexError:
+                return False
+            except pygetwindow.PyGetWindowException:
+                return False
+        elif platform.system() == "Linux":
+            ewmh = EWMH()
+            active_window = ewmh.getActiveWindow()
+            if not active_window:
+                return False
+            for window in ewmh.getClientList():
+                try:
+                    name = ewmh.getWmName(window)
+                    if name and self.window_title in name.decode('utf-8'):
+                        return window.id == active_window.id
+                except:
+                    continue
             return False
-        except pygetwindow.PyGetWindowException:
+        else:
             return False
 
     def get_win_region(self, active_window: bool | None = None, raise_exception: bool = True) -> Region | None:
@@ -93,24 +115,40 @@ class Operator:
         :return: Region - 窗口区域
         :raises Exception: 如果未找到窗口或窗口未激活
         """
-        if active_window is None:
-            active_window = self.active_window
-        try:
-            win = pygetwindow.getWindowsWithTitle(self.window_title)[0]
-            if not win.isActive and active_window:
-                win.activate()
-            return self._major_win_region(win.left, win.top, win.width, win.height)
-        except IndexError:
-            if raise_exception:
-                raise Exception("未找到崩坏：星穹铁道窗口")
-            return None
-        except pygetwindow.PyGetWindowException as e:
-            if raise_exception:
-                raise Exception(f"窗口未激活: {e}") from e
-            return None
-        except Exception as e:
-            if raise_exception:
-                raise Exception(f"获取窗口区域失败: {e}") from e
+        if platform.system() == "Windows":
+            if active_window is None:
+                active_window = self.active_window
+            try:
+                win = pygetwindow.getWindowsWithTitle(self.window_title)[0]
+                if not win.isActive and active_window:
+                    win.activate()
+                return self._major_win_region(win.left, win.top, win.width, win.height)
+            except IndexError:
+                if raise_exception:
+                    raise Exception("未找到崩坏：星穹铁道窗口")
+                return None
+            except pygetwindow.PyGetWindowException as e:
+                if raise_exception:
+                    raise Exception(f"窗口未激活: {e}") from e
+                return None
+            except Exception as e:
+                if raise_exception:
+                    raise Exception(f"获取窗口区域失败: {e}") from e
+                return None
+        else:
+            ewmh = EWMH()
+            windows = ewmh.getClientList()
+
+            for window in windows:
+                try:
+                    name = ewmh.getWmName(window)
+                    if name and self.window_title in name.decode('utf-8'):
+                        geom = window.get_geometry()
+                        return self._major_win_region(
+                            geom.x, geom.y, geom.width, geom.height
+                        )
+                except:
+                    continue
             return None
 
     def _major_win_region(self, left, top, width, height):
@@ -138,8 +176,39 @@ class Operator:
         Note:
             当region为None时，会自动获取活动窗口区域
         """
+        if platform.system() == "Linux":
+            return self._screenshot_region_linux(region)
+        else:  # Windows
+            return self._screenshot_region_windows(region)
+
+    def _screenshot_region_linux(self, region: Region | None = None):
+        """
+        Linux平台下的屏幕截图实现
+        使用EWMH扩展获取准确的窗口区域并进行截图
+        """
         if region is None:
             region = self.get_win_region(active_window=True)
+        
+        # 保护：避免出现宽或高为 0 的区域
+        if region is None or region.width <= 0 or region.height <= 0:
+            # 尝试使用未对齐的窗口区域重新计算
+            fallback = self.get_win_region(active_window=True)
+            if fallback and fallback.width > 0 and fallback.height > 0:
+                region = fallback
+            else:
+                # 返回整个屏幕截图作为最后回退，避免下游报错
+                return pyscreeze.screenshot()
+        
+        # Linux下使用pyscreeze进行区域截图
+        return pyscreeze.screenshot(region=region.tuple)
+
+    def _screenshot_region_windows(self, region: Region | None = None):
+        """
+        Windows平台下的屏幕截图实现
+        """
+        if region is None:
+            region = self.get_win_region(active_window=True)
+        
         # 保护：避免出现宽或高为 0 的区域
         if region.width <= 0 or region.height <= 0:
             # 尝试使用未对齐的窗口区域重新计算
@@ -149,6 +218,7 @@ class Operator:
             else:
                 # 返回整个屏幕截图作为最后回退，避免下游报错
                 return pyscreeze.screenshot()
+        
         return pyscreeze.screenshot(region=region.tuple)
 
     def screenshot_tuple(self, from_x: float, from_y: float, to_x: float, to_y: float):
@@ -165,6 +235,82 @@ class Operator:
 
         Note:
             坐标比例是基于当前窗口区域计算的，会自动获取窗口区域并短暂延迟(0.5秒)
+        """
+        if platform.system() == "Linux":
+            return self._screenshot_tuple_linux(from_x, from_y, to_x, to_y)
+        else:  # Windows
+            return self._screenshot_tuple_windows(from_x, from_y, to_x, to_y)
+
+    def _screenshot_tuple_linux(self, from_x: float, from_y: float, to_x: float, to_y: float):
+        """
+        Linux平台下根据相对坐标比例截取窗口内区域
+        优先使用xdotool进行截图，失败时回退到python-xlib实现
+        """
+        try:
+            region = self.get_win_region()
+            left = int(region.left + region.width * from_x)
+            top = int(region.top + region.height * from_y)
+            width = int(region.width * (to_x - from_x))
+            height = int(region.height * (to_y - from_y))
+            
+            # 尝试使用xdotool截图
+            return self._screenshot_with_xdotool(left, top, width, height)
+        except Exception as e:
+            # xdotool失败，回退到python-xlib实现
+            logger.debug(f"xdotool截图失败，回退到python-xlib: {e}")
+            return self._screenshot_tuple_xlib(from_x, from_y, to_x, to_y)
+    
+    def _screenshot_tuple_xlib(self, from_x: float, from_y: float, to_x: float, to_y: float):
+        """使用python-xlib实现的截图回退方案"""
+        region = self.get_win_region()
+        left = int(region.left + region.width * from_x)
+        top = int(region.top + region.height * from_y)
+        width = int(region.width * (to_x - from_x))
+        height = int(region.height * (to_y - from_y))
+        return pyscreeze.screenshot(region=(left, top, width, height))
+    
+    def _screenshot_with_xdotool(self, left: int, top: int, width: int, height: int):
+        """使用xdotool命令行工具进行截图"""
+        try:
+            # 使用xdotool获取窗口ID，然后截图
+            import tempfile
+            import os
+            
+            # 创建临时文件存储截图
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+                temp_path = tmp_file.name
+            
+            # 执行xdotool截图命令
+            cmd = [
+                'import',
+                '-window', 'root',
+                '-crop', f'{width}x{height}+{left}+{top}',
+                temp_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0 and os.path.exists(temp_path):
+                # 成功截图，加载图片
+                from PIL import Image
+                image = Image.open(temp_path)
+                # 清理临时文件
+                os.unlink(temp_path)
+                return image
+            else:
+                # 删除临时文件（如果存在）
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                raise Exception(f"xdotool截图失败: {result.stderr}")
+                
+        except subprocess.TimeoutExpired:
+            raise Exception("xdotool截图超时")
+        except Exception as e:
+            raise Exception(f"xdotool截图异常: {e}")
+    
+    def _screenshot_tuple_windows(self, from_x: float, from_y: float, to_x: float, to_y: float):
+        """
+        Windows平台下根据相对坐标比例截取窗口内区域
         """
         region = self.get_win_region()
         left = int(region.left + region.width * from_x)

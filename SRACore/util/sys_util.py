@@ -1,77 +1,116 @@
 import psutil
+import platform
+import subprocess
+from typing import Union
 
 
-def Popen(arg: str | list[str], shell: bool = False, **kwargs) -> bool:  # NOQA
+def Popen(arg: Union[str, list[str]], shell: bool = False, **kwargs) -> bool:
     """
-    Launches a process using the specified path.
+    启动进程的跨平台函数
 
     Args:
-        arg (str | list[str]): The path to the executable or a list of arguments to execute.
-        shell (bool): Whether to execute the command through the shell. Default is False.
+        arg: 可执行文件路径或参数列表
+        shell: 是否使用shell执行命令
 
     Returns:
-        bool: True if the process is successfully launched, False otherwise.
+        bool: 进程是否成功启动
     """
     try:
-        psutil.Popen(arg, shell=shell, **kwargs)
+        if isinstance(arg, str):
+            subprocess.Popen(arg, shell=shell, **kwargs)
+        else:
+            subprocess.Popen(arg, shell=shell, **kwargs)
         return True
-    except FileNotFoundError:
-        # Raised when the specified file or executable is not found.
-        return False
-    except OSError:
-        # Raised for other OS-related errors during process creation.
+    except (FileNotFoundError, OSError):
         return False
 
 
-def is_process_running(process_name) -> bool:
+
+def is_process_running(process_name: str) -> bool:
     """
-    Check if there is any running process that contains the given name string.
+    检查指定进程是否在运行（跨平台）
 
     Args:
-        process_name (str): Name of the process to be searched.
+        process_name: 进程名
+
     Returns:
-        True if the process is running, otherwise False.
+        bool: 进程是否在运行
     """
-    # Iterate over all running processes
-    for proc in psutil.process_iter(['name']):
+    current_platform = platform.system().lower()
+
+    for proc in psutil.process_iter(['name', 'cmdline']):
         try:
-            # Check if the process name contains the given name string
-            if process_name.lower() in proc.info['name'].lower():
+            # 用cmdline检查进程
+            if current_platform == 'linux':
+                cmdline = proc.info.get('cmdline')
+                if cmdline and process_name.lower() in ' '.join(cmdline).lower():
+                    return True
+
+            # 检查进程名（适用于Windows和部分Linux进程）
+            proc_name = proc.info.get('name')
+            if proc_name and process_name.lower() in proc_name.lower():
                 return True
+
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
+            continue
     return False
 
 
-def task_kill(process: str) -> bool:
-    """关闭指定进程
+def task_kill(process_name: str) -> bool:
+    """
+    关闭指定进程（跨平台）
 
     Args:
-        process (str): 进程名
+        process_name: 进程名
+
     Returns:
-        bool
+        bool: 是否成功关闭
     """
-    for proc in psutil.process_iter(['name']):
+    current_platform = platform.system().lower()
+    killed = False
+
+    for proc in psutil.process_iter(['name', 'pid', 'cmdline']):
         try:
-            if process.lower() in proc.info['name'].lower():
+            proc_info = proc.info
+            match = False
+
+            # 平台特定的匹配逻辑
+            if current_platform == 'linux':
+                cmdline = proc_info.get('cmdline')
+                if cmdline and process_name.lower() in ' '.join(cmdline).lower():
+                    match = True
+            elif current_platform == 'windows':
+                proc_name = proc_info.get('name')
+                if proc_name and process_name.lower() in proc_name.lower():
+                    match = True
+            if match:
                 proc.kill()
-                return True
+                killed = True
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-    return False
+            continue
+    return killed
 
 
 def shutdown(time: int):
     """关机
 
     Args:
-        time (int): 延时关机时间，单位秒
+        time (int): 延时关机时间，单位分
     """
     if time < 0:
         time = 0
-    Popen(f"shutdown -s -t {time}", shell=True)
+    if platform.system() == "Windows":
+        Popen(f"shutdown -s -t {time * 60}", shell=True)
+    else:
+        if time == 0:
+            Popen("sudo shutdown -h now", shell=True)
+        else:
+            Popen(f"sudo shutdown -h +{time}", shell=True)
 
 
 def shutdown_cancel():
     """取消关机"""
-    Popen("shutdown -a", shell=True)
+    if platform.system() == "Windows":
+        Popen("shutdown -a", shell=True)
+    else:
+        Popen("shutdown -c", shell=True)

@@ -1,7 +1,9 @@
 import cmd
 import multiprocessing
+import os
 import threading
 import time
+import platform
 
 from loguru import logger
 
@@ -214,10 +216,15 @@ class SRACli(cmd.Cmd):
 
     @staticmethod
     def is_admin() -> bool:
-        """检查当前用户是否具有管理员权限（仅限 Windows）"""
-        try:
-            import ctypes
-            return ctypes.windll.shell32.IsUserAnAdmin() != 0  # NOQA
-        except Exception as e:
-            logger.error(t('cli.admin_check_error', error=e))
-            return False
+        """检查当前用户是否具有管理员权限(Windows & Linux)"""
+        if platform.system() == "Windows":
+            try:
+                import ctypes
+                return ctypes.windll.shell32.IsUserAnAdmin() != 0  # NOQA
+            except Exception as e:
+                logger.error(t('cli.admin_check_error', error=e))
+                return False
+        elif platform.system() == "Linux":
+            if os.getuid() == 0:
+                return True
+        return False

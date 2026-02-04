@@ -2,11 +2,11 @@ import smtplib
 from email.mime.text import MIMEText
 from email.utils import formataddr
 
-from plyer import notification
-
 from SRACore.util import encryption
 from SRACore.util.config import load_settings
 from SRACore.util.i18n import t
+
+from plyer import notification
 
 
 def try_send_notification(title: str, message: str):
@@ -38,7 +38,7 @@ def send_mail_notification(title: str = "SRA", message: str = "", config: dict |
     port = config.get("SmtpPort", 465)
     sender = config.get("EmailSender", "")
     auth_code = config.get("EmailAuthCode", "")
-    password = encryption.win_decryptor(auth_code) if auth_code else ""
+    password = encryption.decrypt_data(auth_code) if auth_code else ""
     receiver = config.get("EmailReceiver", "")
     send_mail(title, "SRA通知", message, SMTP, port, sender, password, receiver)
 

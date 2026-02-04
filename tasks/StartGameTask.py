@@ -4,11 +4,14 @@ from SRACore.task import BaseTask
 from SRACore.util import sys_util, encryption
 from SRACore.util.logger import logger
 
+import platform
+
 
 class StartGameTask(BaseTask):
     def run(self):
         logger.info("启动游戏任务开始")
-        self.launch_game()
+        if not self.launch_game():
+            return False
         match self.login():
             case -1 | 0:
                 logger.warning("登录失败")
@@ -45,11 +48,17 @@ class StartGameTask(BaseTask):
         """启动游戏"""
         if sys_util.is_process_running("StarRail.exe"):  # 检查游戏是否已在运行
             logger.info("游戏已在运行中")
-            return
+            return True
+        if platform.system() == "Linux":
+            logger.warning("虽然Linux系统有启动游戏的开源项目，但涉及到程序破解问题，恕不能整合，请自行搜索该项目。如您有好的方法能在不注入游戏的情况下正常启动，请提交PR或issue。预计在下个版本可以自定义命令启动。")
+            logger.error("Linux不应该有启动游戏的任务。")
+            return False
         if self.config['StartGameChannel'] == 0:
             self.launch_au()  # 启动官服
+            return True
         else:
             self.launch_bl()  # 启动B站服
+            return False
 
     def launch_bl(self):
         self.change_config_ini(14, 0)
@@ -106,7 +115,7 @@ class StartGameTask(BaseTask):
 
         self.click_point(0.5, 0.69)  # 点击账号密码登录
         if self.config['StartGameAutoLogin']:
-            user = encryption.win_decryptor(self.config['StartGameUsername'])
+            user = encryption.decrypt_data(self.config['StartGameUsername'])
             logger.info(f"登录账号：{user}")
             self.press_key('tab')
             self.sleep(1)
@@ -115,7 +124,7 @@ class StartGameTask(BaseTask):
             self.sleep(1)
             self.press_key("tab")
             self.sleep(0.2)
-            self.copy(encryption.win_decryptor(self.config['StartGamePassword']))
+            self.copy(encryption.decrypt_data(self.config['StartGamePassword']))
             self.paste()
             self.sleep(0.2)
             self.click_point(0.37, 0.53)  # 同意隐私政策
@@ -151,7 +160,7 @@ class StartGameTask(BaseTask):
             logger.error("发生错误，错误编号10")
             return -1
         if self.config['StartGameAutoLogin']:
-            user = encryption.win_decryptor(self.config['StartGameUsername'])
+            user = encryption.decrypt_data(self.config['StartGameUsername'])
             if user == "":
                 logger.error("未填写账号")
                 return -1
@@ -162,7 +171,7 @@ class StartGameTask(BaseTask):
             self.sleep(1)
             self.press_key("tab")
             self.sleep(0.2)
-            self.copy(encryption.win_decryptor(self.config['StartGamePassword']))
+            self.copy(encryption.decrypt_data(self.config['StartGamePassword']))
             self.paste()
             self.click_img("resources/img/agree.png", x_offset=-158)
             if not self.click_img("resources/img/enter_game.png"):
