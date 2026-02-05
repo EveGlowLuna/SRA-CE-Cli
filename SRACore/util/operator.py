@@ -10,6 +10,7 @@ import numpy as np
 import pyautogui
 if platform.system() == "Windows":
     import pygetwindow
+
 # noinspection PyPackageRequirements
 # (pyperclip is in pyautogui requirements)
 import pyperclip
@@ -17,9 +18,8 @@ import pyscreeze
 from PIL.Image import Image
 from pyscreeze import Box
 
-
-from ewmh import EWMH
-
+if platform.system() == "Linux":
+    from ewmh import EWMH
 from rapidocr_onnxruntime import RapidOCR
 from SRACore.util.config import load_settings
 from SRACore.util.logger import logger
@@ -101,7 +101,7 @@ class Operator:
             for window in ewmh.getClientList():
                 try:
                     name = ewmh.getWmName(window)
-                    if name and self.window_title in name.decode('utf-8'):
+                    if name and self.window_title in name:
                         return window.id == active_window.id
                 except:
                     continue
@@ -142,12 +142,30 @@ class Operator:
             for window in windows:
                 try:
                     name = ewmh.getWmName(window)
-                    if name and self.window_title in name.decode('utf-8'):
+                    name_dec = ""
+                    if isinstance(name, str):
+                        name_dec = name
+                    elif isinstance(name, bytes):
+                        # 尝试 UTF-8，失败则用 latin-1（避免 decode error）
+                        try:
+                            name_dec = name.decode('utf-8')
+                        except UnicodeDecodeError:
+                            name_dec = name.decode('latin-1', errors='replace')
+                    if name and self.window_title in name_dec:
                         geom = window.get_geometry()
+
+                        # 获取绝对坐标
+                        translate = window.translate_coords(ewmh.root, 0, 0)
+                        absolute_x = -(geom.x + translate._data['x'])
+                        absolute_y = -(geom.y + translate._data['y'])
+
                         return self._major_win_region(
-                            geom.x, geom.y, geom.width, geom.height
+                            absolute_x, absolute_y,  # 使用绝对坐标
+                            geom.width, geom.height
                         )
-                except:
+                except Exception as e:
+                    if raise_exception:
+                        raise Exception(f"获取窗口区域失败: {e}")
                     continue
             return None
 

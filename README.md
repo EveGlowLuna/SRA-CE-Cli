@@ -1,11 +1,14 @@
 <p align="center"><img src="/resources/SRAico.png" alt="icon"></p>
 <p align="center">
-    <img src="https://img.shields.io/badge/platform-Windows-blue" alt="platform">
+    <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue" alt="platform">
     <img alt="Static Badge" src="https://img.shields.io/badge/python-3.12-skyblue">
 </p>
 
 # SRA-CE-cli
 作为[EveGlowLuna/StarRailAssistant-CommunityEdition](https://github.com/EveGlowLuna/StarRailAssistant-CommunityEdition)的子模块，同步上游[Shasnow/StarRailAssistant](https://github.com/Shasnow/StarRailAssistant)代码
+
+## 孩子们，Linux也干了
+尝试支持Linux,但只支持X11桌面
 
 ## 小白可直接移步至主仓库
 [EveGlowLuna/StarRailAssistant-CommunityEdition](https://github.com/EveGlowLuna/StarRailAssistant-CommunityEdition)
