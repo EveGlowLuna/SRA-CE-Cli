@@ -135,7 +135,7 @@ class Operator:
                 if raise_exception:
                     raise Exception(f"获取窗口区域失败: {e}") from e
                 return None
-        else:
+        elif platform.system() == "Linux":
             ewmh = EWMH()
             windows = ewmh.getClientList()
 
@@ -152,12 +152,13 @@ class Operator:
                         except UnicodeDecodeError:
                             name_dec = name.decode('latin-1', errors='replace')
                     if name and self.window_title in name_dec:
+                        _ = window.id
                         geom = window.get_geometry()
-
                         # 获取绝对坐标
                         translate = window.translate_coords(ewmh.root, 0, 0)
-                        absolute_x = -(geom.x + translate._data['x'])
-                        absolute_y = -(geom.y + translate._data['y'])
+
+                        absolute_x = -(translate._data['x'])
+                        absolute_y = -(translate._data['y'])
 
                         return self._major_win_region(
                             absolute_x, absolute_y,  # 使用绝对坐标
@@ -168,6 +169,8 @@ class Operator:
                         raise Exception(f"获取窗口区域失败: {e}")
                     continue
             return None
+        else:
+            return None
 
     def _major_win_region(self, left, top, width, height):
         """获取主要操作区域"""
@@ -175,10 +178,17 @@ class Operator:
         aligned_width = (width // 160) * 160
         aligned_height = (height // 90) * 90
         # 当窗口较小或对齐后为 0 时，回退到原始尺寸以避免截屏高度为 0
-        self.width = aligned_width if aligned_width > 0 else width
-        self.height = aligned_height if aligned_height > 0 else height
-        self.top = (top + int(30 * self.zoom)) if top != 0 else top
-        self.left = (left + int(8 * self.zoom)) if left != 0 else left
+        if platform.system() == "Windows":
+            self.width = aligned_width if aligned_width > 0 else width
+            self.height = aligned_height if aligned_height > 0 else height
+            self.top = (top + int(30 * self.zoom)) if top != 0 else top
+            self.left = (left + int(8 * self.zoom)) if left != 0 else left
+        else:
+            # Linux 中直接返回即可，有 Bug 也是之后的事（
+            self.width = width
+            self.height = height
+            self.top = top
+            self.left = left
         return Region(self.left, self.top, self.width, self.height)
 
     def screenshot_region(self, region: Region | None = None):
