@@ -16,6 +16,8 @@ import os
 import sys
 from pathlib import Path
 
+from SRACore.util.user_util import get_sra_config_dir
+
 # 基础的常量定义
 AppPath = Path(os.path.dirname(os.path.realpath(sys.argv[0])))
 VERSION = "2.4.0-beta.1"  # 版本号
@@ -33,4 +35,4 @@ RANDOM_TITLE = [
     "立志成为崩铁糕手",
 ]
 
-AppDataSraDir = Path(os.getenv("APPDATA") if sys.platform == "win32" else os.path.expanduser("~/.config")) / "SRA"
+AppDataSraDir = get_sra_config_dir()
