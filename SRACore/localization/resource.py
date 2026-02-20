@@ -80,6 +80,10 @@ class Localization:
         From cli.noAdminWarning"""
         return self.get_translation("cli.noAdminWarning")
 
+    @property
+    def cli_withLinuxAdminWarning(self) -> str:
+        return self.get_translation("cli.withLinuxAdminWarning")
+
     def cli_unknownCommand(self, command) -> str:
         """Unknown command: '{command}'. Type 'help' to get a list of available commands.
 

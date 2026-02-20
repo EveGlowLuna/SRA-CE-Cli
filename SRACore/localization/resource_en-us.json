@@ -1,6 +1,7 @@
 {
     "cli.intro": "SRA-cli {version} ({core})\nType 'help' or '?' to list commands.",
     "cli.noAdminWarning": "You are not running SRA-cli with administrative privileges. Some commands may not work as expected.",
+    "cli.withLinuxAdminWarning": "You are running SRA-cli with root privileges. Window detection and operations may not function properly",
     "cli.unknownCommand": "Unknown command: '{command}'. Type 'help' to get a list of available commands.",
     "cli.invalidArguments": "Invalid arguments for command '{command}'. Type 'help {command}' for usage.",
     "cli.helpTitle": "Available commands:",

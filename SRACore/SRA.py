@@ -29,7 +29,11 @@ class SRACli(cmd.Cmd):
         self.trigger_thread = threading.Thread(target=self.trigger_manager.run, daemon=True)
         self.trigger_thread.start()
         if not self.is_admin():
-            logger.warning(Resource.cli_noAdminWarning)
+            if platform.system() == 'Windows':
+                logger.warning(Resource.cli_noAdminWarning)
+        elif self.is_admin():
+            if platform.system() == 'Linux':
+                logger.warning(Resource.cli_withLinuxAdminWarning)
         stop_hotkey:str = load_settings().get('StartStopHotkey', 'f9')
         stop_hotkey=stop_hotkey.lower()  # 统一小写
         if stop_hotkey is None or stop_hotkey == '':

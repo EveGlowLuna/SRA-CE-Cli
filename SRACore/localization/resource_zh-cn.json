@@ -1,6 +1,7 @@
 {
     "cli.intro": "SRA-cli {version} ({core})\n输入 'help' 或 '?' 来查看命令列表。",
     "cli.noAdminWarning": "您没有以管理员权限运行 SRA-cli。某些命令可能无法正常工作。",
+    "cli.withLinuxAdminWarning": "你正在以 root 权限运行 SRA-cli。 窗口识别和操作可能无法正常工作。",
     "cli.unknownCommand": "未知命令: '{command}'。输入 'help' 来获取可用命令列表。",
     "cli.invalidArguments": "命令 '{command}' 的参数无效。输入 'help {command}' 获取用法说明。",
     "cli.helpTitle": "可用命令：",

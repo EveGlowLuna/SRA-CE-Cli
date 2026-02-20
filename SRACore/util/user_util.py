@@ -51,16 +51,23 @@ def get_username() -> str:
         str: 当前用户名
     """
     if sys.platform == "win32":
-        # Windows平台使用USERNAME环境变量
+        # Windows平台
         username = os.getenv("USERNAME")
         return username
     else:
-        try:
-            username = os.getenv("SUDO_USER")
+        # Linux
+        # 首先检查是否是sudo环境
+        sudo_user = os.getenv("SUDO_USER")
+        if sudo_user:
+            return sudo_user
+        
+        # 如果不是sudo环境，使用USER环境变量
+        username = os.getenv("USER")
+        if username:
             return username
-        except Exception as e:
-            logger.error(f"无法获取用户名：{e}")
-    return os.getenv("USER") or os.getenv("USERNAME")
+            
+        # 最后回退到USERNAME（Linux通常不用这个）
+        return os.getenv("USERNAME") or "unknown"
 
 
 def get_sra_config_dir() -> Path:
