@@ -15,12 +15,11 @@
 import os
 import sys
 from pathlib import Path
-
-from SRACore.util.user_util import get_sra_config_dir
+import SRACore.util.user_util as userutil
 
 # 基础的常量定义
 AppPath = Path(os.path.dirname(os.path.realpath(sys.argv[0])))
-VERSION = "2.4.0-beta.1"  # 版本号
+VERSION = "2.7.0"  # 版本号
 CORE = f"{VERSION} on {sys.platform}"  # 核心版本信息
 
-AppDataSraDir = get_sra_config_dir()
+AppDataSraDir = userutil.get_sra_config_dir()

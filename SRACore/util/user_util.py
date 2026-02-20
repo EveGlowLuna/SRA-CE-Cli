@@ -16,18 +16,21 @@
 import os
 import pwd
 import sys
+from logging import exception
 from pathlib import Path
+
+from loguru import logger
 
 
 def get_real_home() -> str:
     """
     获取真正的用户主目录，即使在sudo环境下也能正确获取原始用户的home目录
-    
+
     Returns:
         str: 用户的主目录路径
     """
     sudo_user = os.environ.get("SUDO_USER")
-    
+
     if sudo_user:
         # 通过用户名查询 home 目录
         try:
@@ -40,15 +43,35 @@ def get_real_home() -> str:
         return os.path.expanduser("~")
 
 
+def get_username() -> str:
+    """
+    获取当前用户名，自动处理跨平台和sudo环境
+
+    Returns:
+        str: 当前用户名
+    """
+    if sys.platform == "win32":
+        # Windows平台使用USERNAME环境变量
+        username = os.getenv("USERNAME")
+        return username
+    else:
+        try:
+            username = os.getenv("SUDO_USER")
+            return username
+        except Exception as e:
+            logger.error(f"无法获取用户名：{e}")
+    return os.getenv("USER") or os.getenv("USERNAME")
+
+
 def get_sra_config_dir() -> Path:
     """
     获取SRA配置目录路径，自动处理跨平台和sudo环境
-    
+
     Returns:
         Path: SRA配置目录的Path对象
     """
     real_home = get_real_home()
-    
+
     if sys.platform == "win32":
         # Windows平台使用APPDATA环境变量
         appdata = os.getenv("APPDATA")
@@ -66,7 +89,7 @@ def get_sra_config_dir() -> Path:
 def get_app_data_sra_dir() -> Path:
     """
     兼容旧版本的函数名，推荐使用 get_sra_config_dir()
-    
+
     Returns:
         Path: SRA配置目录的Path对象
     """

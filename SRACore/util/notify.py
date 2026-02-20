@@ -2,11 +2,10 @@ import smtplib
 from email.mime.text import MIMEText
 from email.utils import formataddr
 
+from plyer import notification
+
 from SRACore.util import encryption
 from SRACore.util.config import load_settings
-from SRACore.util.i18n import t
-
-from plyer import notification
 
 
 def try_send_notification(title: str, message: str):
@@ -19,7 +18,7 @@ def try_send_notification(title: str, message: str):
         send_mail_notification(title, message, setting)
 
 
-def send_windows_notification(title: str, message: str, timeout: int = 10):
+def send_windows_notification(title: str, message: str, timeout: int = 5):
     """
     发送 Windows 系统通知
     :param title: 通知标题
@@ -70,6 +69,7 @@ def send_mail(
     except Exception:
         raise
 
+
 def send_test_email() -> bool:
     """
     发送测试邮件
@@ -114,6 +114,7 @@ def send_test_email() -> bool:
     except Exception as e:
         print(f"测试邮件发送失败: {e}")
         return False
+
 
 class Summary:
     def __init__(self):

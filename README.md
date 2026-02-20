@@ -9,6 +9,14 @@
 
 ## 孩子们，Linux也干了
 尝试支持Linux,但只支持X11桌面
+使用`sudo`运行时，应该注意：
+```bash
+# 保留DISPLAY和XAUTHORITY环境
+sudo -E DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY ...
+
+# 或者允许root连接X server（不安全）
+xhost +SI:localuser:root
+```
 
 ## 小白可直接移步至主仓库
 [EveGlowLuna/StarRailAssistant-CommunityEdition](https://github.com/EveGlowLuna/StarRailAssistant-CommunityEdition)

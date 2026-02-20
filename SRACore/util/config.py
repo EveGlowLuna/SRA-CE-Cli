@@ -1,48 +1,68 @@
+import json
+from typing import Any
+
+from SRACore.localization import Resource
+from SRACore.util.const import AppDataSraDir
 from SRACore.util.logger import logger
 
-from SRACore.util.const import AppDataSraDir
-from SRACore.util.i18n import t
-import json
 
-
-def load_config(name:str):
+def load_config(name:str) -> dict[str, Any] | None:
+    path = ''
     try:
-        with open(AppDataSraDir / f'configs/{name}.json', 'r') as f:
+        if ".json" in name:
+            path = name.replace('\"', '')
+        else:
+            path = AppDataSraDir / f'configs/{name}.json'
+        with open(path, 'r') as f:
            return json.load(f)
-    except FileNotFoundError as e:
-        logger.error(t('config.file_not_found', name=name, error=e))
+    except FileNotFoundError:
+        logger.error(Resource.config_fileNotFound(path))
+        return None
+    except json.JSONDecodeError as e:
+        logger.error(Resource.config_parseError(path, str(e)))
+        return None
+    except Exception as e:
+        logger.error(Resource.config_exception(path, str(e)))
+        return None
+
+def load_data(typ):
+    path = ''
+    match typ:
+        case 'settings':
+            path = AppDataSraDir / 'settings.json'
+        case 'cache':
+            path = AppDataSraDir / 'cache.json'
+        case _:
+            return None
+
+    try:
+        with open(path, 'r') as f:
+           return json.load(f)
+    except FileNotFoundError:
+        logger.error(Resource.config_fileNotFound(path))
         return {}
     except json.JSONDecodeError as e:
-        logger.error(t('config.parse_error', name=name, error=e))
+        logger.error(Resource.config_parseError(path, str(e)))
         return {}
     except Exception as e:
-        logger.error(t('config.load_error', name=name, error=e))
+        logger.error(Resource.config_exception(path, str(e)))
         return {}
 
 def load_settings():
-    try:
-        with open(AppDataSraDir / 'settings.json', 'r') as f:
-           return json.load(f)
-    except FileNotFoundError as e:
-        logger.error(t('config.settings_not_found', error=e))
-        return {}
-    except json.JSONDecodeError as e:
-        logger.error(t('config.settings_parse_error', error=e))
-        return {}
-    except Exception as e:
-        logger.error(t('config.settings_load_error', error=e))
-        return {}
+    return load_data('settings')
 
 def load_cache():
+    return load_data('cache')
+
+def load_app_config():
+    path = 'SRACore/config.toml'
     try:
-        with open(AppDataSraDir / 'cache.json', 'r') as f:
-           return json.load(f)
-    except FileNotFoundError as e:
-        logger.error(t('config.cache_not_found', error=e))
-        return {}
-    except json.JSONDecodeError as e:
-        logger.error(t('config.cache_parse_error', error=e))
-        return {}
+        import tomllib
+        with open(path, 'rb') as f:
+            return tomllib.load(f)
+    except FileNotFoundError:
+        logger.error(Resource.config_fileNotFound(path))
+        return None
     except Exception as e:
-        logger.error(t('config.cache_load_error', error=e))
-        return {}
+        logger.error(Resource.config_exception(path, str(e)))
+        return None

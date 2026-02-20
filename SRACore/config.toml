@@ -10,8 +10,8 @@ module = "tasks.TrailblazePowerTask"
 
 [[tasks]]
 name = "领取奖励"
-main = "ReceiveRewardTask"
-module = "tasks.ReceiveRewardTask"
+main = "ReceiveRewardsTask"
+module = "tasks.ReceiveRewardsTask"
 
 [[tasks]]
 name = "旷宇纷争"
@@ -22,3 +22,8 @@ module = "tasks.CosmicStrifeTask"
 name = "任务完成"
 main = "MissionAccomplishTask"
 module = "tasks.MissionAccomplishTask"
+
+[websockets]
+package = "websockets"
+host = "0.0.0.0"
+port = 8765
